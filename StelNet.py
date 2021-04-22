@@ -73,7 +73,7 @@ class NN(nn.Module):
 
 # Predict
 
-def predict(X, n_mod=20, TL=None):
+def predict(X, n=20, TL=None):
     x_data_preMS, x_data_postMS = normalize(X)
     
     D_in = 2
@@ -84,23 +84,22 @@ def predict(X, n_mod=20, TL=None):
     net = NN(D_in, D_out, num_layers, num_nodes, activation)
     net_preMS = NN(D_in, D_out, num_layers, num_nodes, activation)
     net_postMS = NN(D_in, D_out, num_layers, num_nodes, activation)
-    num_models=n_mod
+    num_models=n
     if num_models > 20: sys.exit('Number of models should not exceed 20')
     
     pre_model = 'Models/baseline/mist_baseline_preMS{}'
     post_model = 'Models/baseline/mist_baseline_postMS{}'
     
     if TL=='DH':
-        pre_model = 'Models/DH/mist_DH_preMS{}'
-        post_model = 'Models/DH/mist_DH_postMS{}'
+        pre_model = 'Models/TL/mist_DH_preMS{}'
+        post_model = 'Models/TL/mist_DH_postMS{}'
     
     net_preMS.load_state_dict(torch.load(pre_model.format(0)), strict=False)
     net_postMS.load_state_dict(torch.load(post_model.format(0)), strict=False)
     y_pred_preMS = torch.unsqueeze(net_preMS(x_data_preMS),0).detach().numpy()
     y_pred_postMS = torch.unsqueeze(net_postMS(x_data_postMS),0).detach().numpy()
-    #y_pred_preMS = []
-    #y_pred_postMS = []
-    for i in range(1,n_mod):
+
+    for i in range(1,n):
         net_preMS.load_state_dict(torch.load(pre_model.format(i)), strict=False)
         net_postMS.load_state_dict(torch.load(post_model.format(i)), strict=False)
         y_pred_preMS = np.append(y_pred_preMS, torch.unsqueeze(net_preMS(x_data_preMS),0).detach().numpy(), axis=0)
@@ -160,18 +159,18 @@ def Gaussian_posteriors(y_mean_preMS, y_mean_postMS, y_std_preMS, y_std_postMS, 
 
 # Posterior Probability Distributions
 
-def posteriors(y_pre , y_post, pi_pre, pi_post, n_mod =20):
-    y_posteriors = (np.ones((n_mod, 1))*pi_pre[np.newaxis])[:,:,np.newaxis]*np.ones(2) * y_pre+ (np.ones((n_mod, 1))*pi_post[np.newaxis])[:,:,np.newaxis]*np.ones(2) * y_post 
+def posteriors(y_pre , y_post, pi_pre, pi_post, n =20):
+    y_posteriors = (np.ones((n, 1))*pi_pre[np.newaxis])[:,:,np.newaxis]*np.ones(2) * y_pre+ (np.ones((n, 1))*pi_post[np.newaxis])[:,:,np.newaxis]*np.ones(2) * y_post 
     return y_posteriors
 
 
 # Plot
 
-def plot_multiple_posteriors(y_posteriors, obs_array, num_models=20, dotsize = 2):
+def plot_multiple_posteriors(y_posteriors, obs_array, n=20, dotsize = 2):
     fig, ax = plt.subplots(2, 1, figsize=(20, 15), sharex= True)
     for i in obs_array:
-        ax[0].scatter(np.ones(num_models)*i, y_posteriors[:,i,0], s=dotsize)
-        ax[1].scatter(np.ones(num_models)*i, y_posteriors[:,i,1], s=dotsize)
+        ax[0].scatter(np.ones(n)*i, y_posteriors[:,i,0], s=dotsize)
+        ax[1].scatter(np.ones(n)*i, y_posteriors[:,i,1], s=dotsize)
     ax[1].set_xlabel('Observation id',fontsize=30)
     ax[0].set_ylabel('$\log(age \ [yrs])$', fontsize=30)
     ax[1].set_ylabel('$\log(mass)$ [$M_{\odot}$]', fontsize=30)
@@ -180,10 +179,10 @@ def plot_multiple_posteriors(y_posteriors, obs_array, num_models=20, dotsize = 2
 
     return ax
 
-def plot_posterior(y_post,obs_id, num_models=20):
+def plot_posterior(y_post,obs_id, n=20):
     fig, ax = plt.subplots(2, 1, figsize=(20, 15), sharex= True)
-    ax[0].scatter(np.arange(num_models)+1, y_post[:,obs_id,0], s=30)
-    ax[1].scatter(np.arange(num_models)+1, y_post[:,obs_id,1], s=30)
+    ax[0].scatter(np.arange(n)+1, y_post[:,obs_id,0], s=30)
+    ax[1].scatter(np.arange(n)+1, y_post[:,obs_id,1], s=30)
     ax[0].set_xticks([i for i in range(1,21)])
     ax[0].tick_params(labelsize=25)
     ax[1].tick_params(labelsize=25)
